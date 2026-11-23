@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Singapore Vehicle Quota & COE Price Intelligence | Julie Xiao</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #090d16;
+      --surface: #111827;
+      --surface-card: #182234;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(56, 189, 248, 0.4);
+      --text: #f3f4f6;
+      --text-muted: #94a3b8;
+      --accent-cyan: #38bdf8;
+      --accent-indigo: #818cf8;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-emerald: #10b981;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      line-height: 1.5;
+      padding: 1.5rem;
+    }
+    .wrapper {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    /* Executive Header */
+    header {
+      background: linear-gradient(135deg, rgba(24, 34, 52, 0.9) 0%, rgba(17, 24, 39, 0.95) 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.25rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .title-group h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 40%, var(--accent-cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.35rem;
+    }
+    .title-group p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    .badge-author {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 10px;
+      padding: 0.6rem 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      text-align: right;
+    }
+    .badge-author span {
+      color: var(--accent-cyan);
+      font-weight: 600;
+    }
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .kpi-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-focus);
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+    }
+    .kpi-card.cyan::before { background: var(--accent-cyan); }
+    .kpi-card.indigo::before { background: var(--accent-indigo); }
+    .kpi-card.amber::before { background: var(--accent-amber); }
+    .kpi-card.emerald::before { background: var(--accent-emerald); }
+    .kpi-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+    .kpi-value {
+      font-size: 1.85rem;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 0.3rem;
+      letter-spacing: -0.03em;
+    }
+    .kpi-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    /* Chart Section */
+    .chart-section {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .chart-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      gap: 1rem;
+    }
+    .chart-title-group h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+    .chart-title-group p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .btn-group {
+      display: flex;
+      gap: 0.5rem;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 0.3rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .btn-toggle {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.35rem 0.8rem;
+      border-radius: 7px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-toggle:hover {
+      color: var(--text);
+    }
+    .btn-toggle.active {
+      background: var(--accent-cyan);
+      color: #0b0f19;
+    }
+    .chart-container {
+      position: relative;
+      height: 380px;
+      width: 100%;
+    }
+    /* Split Panels: Correlation + Calculator */
+    .dual-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .panel {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+    .panel-subtitle {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+    }
+    /* Interactive Calculator Form */
+    .calc-row {
+      margin-bottom: 1rem;
+    }
+    .calc-row label {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+    .calc-input {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.9rem;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .calc-input:focus {
+      border-color: var(--accent-cyan);
+    }
+    .calc-output-box {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 12px;
+      padding: 1.1rem;
+      margin-top: 1.25rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      text-align: center;
+    }
+    .calc-output-item .label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .calc-output-item .val {
+      font-size: 1.35rem;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent-cyan);
+      margin-top: 0.2rem;
+    }
+    /* Executive Findings & Recommendations */
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .insight-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+    .insight-card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .finding-item {
+      margin-bottom: 1rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .finding-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .finding-item strong {
+      color: var(--accent-cyan);
+      font-size: 0.92rem;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    .finding-item p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+    .rec-item {
+      background: rgba(15, 23, 42, 0.6);
+      border-left: 3px solid var(--accent-emerald);
+      border-radius: 0 8px 8px 0;
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.85rem;
+    }
+    .rec-item:last-child {
+      margin-bottom: 0;
+    }
+    .rec-item strong {
+      color: #34d399;
+      font-size: 0.9rem;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    .rec-item p {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      padding: 1.5rem 0;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <!-- Executive Header -->
+    <header>
+      <div class="title-group">
+        <h1>Singapore Vehicle Quota & COE Price Intelligence</h1>
+        <p>Strategic Executive Dashboard · Curated Singapore Open Data (2010 – Nov 2026)</p>
+      </div>
+      <div class="badge-author">
+        Author: <span>Julie Xiao</span> (@juliexiao)<br>
+        NUS MSBA · Build with Antigravity Lab
+      </div>
+    </header>
+
+    <!-- KPI Summary Grid -->
+    <section class="kpi-grid">
+      <div class="kpi-card cyan">
+        <div class="kpi-label">Cat A Record Peak (Nov 2026)</div>
+        <div class="kpi-value">39,001</div>
+        <div class="kpi-sub">Exercise 1 · Bids/Quota: 1.70x (Inverted above Cat B)</div>
+      </div>
+      <div class="kpi-card indigo">
+        <div class="kpi-label">Cat B All-Time Record (Oct 2023)</div>
+        <div class="kpi-value">50,001</div>
+        <div class="kpi-sub">Exercise 2 · Squeezed Quota: 472 vehicles</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Cat E Open Record (Oct 2023)</div>
+        <div class="kpi-value">58,004</div>
+        <div class="kpi-sub">Exercise 2 · Squeezed Quota: 138 vehicles</div>
+      </div>
+      <div class="kpi-card emerald">
+        <div class="kpi-label">Cat A/B Spread Convergence</div>
+        <div class="kpi-value">,560</div>
+        <div class="kpi-sub">2026 Average Spread (Collapsed from 7,263 in 2023)</div>
+      </div>
+    </section>
+
+    <!-- Chart 1: Historical Trend -->
+    <section class="chart-section">
+      <div class="chart-header">
+        <div class="chart-title-group">
+          <h2>Historical COE Premium Trajectories (2010 – 2026)</h2>
+          <p>Interactive clearing premiums across Category A, B, C, and E bidding exercises</p>
+        </div>
+        <div class="btn-group">
+          <button class="btn-toggle active" onclick="filterTimeframe('all', this)">All (2010-2026)</button>
+          <button class="btn-toggle" onclick="filterTimeframe('post-covid', this)">Post-2020</button>
+          <button class="btn-toggle" onclick="filterTimeframe('recent', this)">2024-2026</button>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="coeChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Dual Grid: Supply Correlation & Scenario Simulator -->
+    <div class="dual-grid">
+      <!-- Supply vs Premium Relationship -->
+      <div class="panel">
+        <div class="panel-title">Quota Availability vs Premium Elasticity</div>
+        <div class="panel-subtitle">Category E & B exhibit strong inverse price elasticity against quota throttling</div>
+        <div style="height: 260px;">
+          <canvas id="quotaChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Depreciation & Bidding Scenario Calculator -->
+      <div class="panel">
+        <div class="panel-title">Executive Fleet & Dealership COE Depreciation Calculator</div>
+        <div class="panel-subtitle">Calculate monthly capital commitment and amortized annual COE cost per vehicle</div>
+        
+        <div class="calc-row">
+          <label>Target Category:</label>
+          <select id="calcCategory" class="calc-input" onchange="updateCalcDefaults()">
+            <option value="139001">Category A (Current Peak: 39,001)</option>
+            <option value="125600">Category B (Latest: 25,600)</option>
+            <option value="91790">Category C Commercial (Latest: 1,790)</option>
+            <option value="136000">Category E Open (Latest: 36,000)</option>
+          </select>
+        </div>
+        <div class="calc-row">
+          <label>COE Premium (SGD):</label>
+          <input type="number" id="calcPremium" class="calc-input" value="139001" oninput="computeDepreciation()">
+        </div>
+        <div class="calc-row">
+          <label>Financing Tenor / Holding Period (Years):</label>
+          <input type="number" id="calcYears" class="calc-input" value="10" min="1" max="10" oninput="computeDepreciation()">
+        </div>
+
+        <div class="calc-output-box">
+          <div class="calc-output-item">
+            <div class="label">Annual COE Depreciation</div>
+            <div class="val" id="annualDeprec">3,900</div>
+          </div>
+          <div class="calc-output-item">
+            <div class="label">Monthly COE Cost</div>
+            <div class="val" id="monthlyDeprec">,158</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Insights & Strategic Recommendations -->
+    <section class="insights-grid">
+      <div class="insight-card">
+        <h3>🔍 Key Empirical Findings</h3>
+        <div class="finding-item">
+          <strong>1. Category A Price Inversion & All-Time High in 2026</strong>
+          <p>Category A reached an unprecedented historical peak of <b>39,001</b> in November 2026 (Exercise 1), exceeding Category B (32,334) due to high EV mainstream adoption and concentrated middle-market demand (1.70x bid-to-quota ratio).</p>
+        </div>
+        <div class="finding-item">
+          <strong>2. The October 2023 Structural Squeeze (50k+ Barrier)</strong>
+          <p>Supply restriction throttled Category B quota down to 472 units, generating the record all-time peak of <b>50,001</b>. Category E surged to <b>58,004</b> with an intense supply-price negative correlation of <b>r = -0.768</b>.</p>
+        </div>
+        <div class="finding-item">
+          <strong>3. Premium Spread Compression (2023 vs 2026)</strong>
+          <p>The Cat B luxury premium over Cat A collapsed from an annual average spread of <b>+7,263</b> in 2023 down to just <b>+,560</b> in 2026, signaling structural structural price inelasticity across car classifications.</p>
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <h3>🎯 Strategic Recommendations for Dealerships & Fleets</h3>
+        <div class="rec-item">
+          <strong>Recommendation 1: Dynamic Bidding Tranches for Dealerships</strong>
+          <p>Automotive dealerships should transition away from fixed retail markup and deploy dynamic COE pass-through hedging. When bid-to-quota ratios surpass 1.5x in Exercise 1 of any quota window, lock forward orders using Cat E transferability to mitigate margin erosion.</p>
+        </div>
+        <div class="rec-item">
+          <strong>Recommendation 2: EV Fleet Leasing Over Direct Capital Ownership</strong>
+          <p>Corporate fleet operators should shift toward 5-year operating leases rather than 10-year outright vehicle purchases. With annual COE depreciation topping 3,900/year per mass-market vehicle, leasing shelters balance sheets from end-of-cycle quota quota supply ramp-up risks.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      NUS Master of Science in Business Analytics (MSBA) · Build with Antigravity Hands-on Lab · Data lineage: Singapore LTA / data.gov.sg
+    </footer>
+  </div>
+
+  <script>
+    const rawData = {"labels": ["2010-01 E1", "2010-01 E2", "2010-02 E1", "2010-02 E2", "2010-03 E1", "2010-03 E2", "2010-04 E1", "2010-04 E2", "2010-05 E1", "2010-05 E2", "2010-06 E1", "2010-06 E2", "2010-07 E1", "2010-07 E2", "2010-08 E1", "2010-08 E2", "2010-09 E1", "2010-09 E2", "2010-10 E1", "2010-10 E2", "2010-11 E1", "2010-11 E2", "2010-12 E1", "2010-12 E2", "2011-01 E1", "2011-01 E2", "2011-02 E1", "2011-02 E2", "2011-03 E1", "2011-03 E2", "2011-04 E1", "2011-04 E2", "2011-05 E1", "2011-05 E2", "2011-06 E1", "2011-06 E2", "2011-07 E1", "2011-07 E2", "2011-08 E1", "2011-08 E2", "2011-09 E1", "2011-09 E2", "2011-10 E1", "2011-10 E2", "2011-11 E1", "2011-11 E2", "2011-12 E1", "2011-12 E2", "2012-01 E1", "2012-01 E2", "2012-02 E1", "2012-02 E2", "2012-03 E1", "2012-03 E2", "2012-04 E1", "2012-04 E2", "2012-05 E1", "2012-05 E2", "2012-06 E1", "2012-06 E2", "2012-07 E1", "2012-07 E2", "2012-08 E1", "2012-08 E2", "2012-09 E1", "2012-09 E2", "2012-10 E1", "2012-10 E2", "2012-11 E1", "2012-11 E2", "2012-12 E1", "2012-12 E2", "2013-01 E1", "2013-01 E2", "2013-02 E1", "2013-02 E2", "2013-03 E1", "2013-03 E2", "2013-04 E1", "2013-04 E2", "2013-05 E1", "2013-05 E2", "2013-06 E1", "2013-06 E2", "2013-07 E1", "2013-07 E2", "2013-08 E1", "2013-08 E2", "2013-09 E1", "2013-09 E2", "2013-10 E1", "2013-10 E2", "2013-11 E1", "2013-11 E2", "2013-12 E1", "2013-12 E2", "2014-01 E1", "2014-01 E2", "2014-02 E1", "2014-02 E2", "2014-03 E1", "2014-03 E2", "2014-04 E1", "2014-04 E2", "2014-05 E1", "2014-05 E2", "2014-06 E1", "2014-06 E2", "2014-07 E1", "2014-07 E2", "2014-08 E1", "2014-08 E2", "2014-09 E1", "2014-09 E2", "2014-10 E1", "2014-10 E2", "2014-11 E1", "2014-11 E2", "2014-12 E1", "2014-12 E2", "2015-01 E1", "2015-01 E2", "2015-02 E1", "2015-02 E2", "2015-03 E1", "2015-03 E2", "2015-04 E1", "2015-04 E2", "2015-05 E1", "2015-05 E2", "2015-06 E1", "2015-06 E2", "2015-07 E1", "2015-07 E2", "2015-08 E1", "2015-08 E2", "2015-09 E1", "2015-09 E2", "2015-10 E1", "2015-10 E2", "2015-11 E1", "2015-11 E2", "2015-12 E1", "2015-12 E2", "2016-01 E1", "2016-01 E2", "2016-02 E1", "2016-02 E2", "2016-03 E1", "2016-03 E2", "2016-04 E1", "2016-04 E2", "2016-05 E1", "2016-05 E2", "2016-06 E1", "2016-06 E2", "2016-07 E1", "2016-07 E2", "2016-08 E1", "2016-08 E2", "2016-09 E1", "2016-09 E2", "2016-10 E1", "2016-10 E2", "2016-11 E1", "2016-11 E2", "2016-12 E1", "2016-12 E2", "2017-01 E1", "2017-01 E2", "2017-02 E1", "2017-02 E2", "2017-03 E1", "2017-03 E2", "2017-04 E1", "2017-04 E2", "2017-05 E1", "2017-05 E2", "2017-06 E1", "2017-06 E2", "2017-07 E1", "2017-07 E2", "2017-08 E1", "2017-08 E2", "2017-09 E1", "2017-09 E2", "2017-10 E1", "2017-10 E2", "2017-11 E1", "2017-11 E2", "2017-12 E1", "2017-12 E2", "2018-01 E1", "2018-01 E2", "2018-02 E1", "2018-02 E2", "2018-03 E1", "2018-03 E2", "2018-04 E1", "2018-04 E2", "2018-05 E1", "2018-05 E2", "2018-06 E1", "2018-06 E2", "2018-07 E1", "2018-07 E2", "2018-08 E1", "2018-08 E2", "2018-09 E1", "2018-09 E2", "2018-10 E1", "2018-10 E2", "2018-11 E1", "2018-11 E2", "2018-12 E1", "2018-12 E2", "2019-01 E1", "2019-01 E2", "2019-02 E1", "2019-02 E2", "2019-03 E1", "2019-03 E2", "2019-04 E1", "2019-04 E2", "2019-05 E1", "2019-05 E2", "2019-06 E1", "2019-06 E2", "2019-07 E1", "2019-07 E2", "2019-08 E1", "2019-08 E2", "2019-09 E1", "2019-09 E2", "2019-10 E1", "2019-10 E2", "2019-11 E1", "2019-11 E2", "2019-12 E1", "2019-12 E2", "2020-01 E1", "2020-01 E2", "2020-02 E1", "2020-02 E2", "2020-03 E1", "2020-03 E2", "2020-07 E1", "2020-07 E2", "2020-08 E1", "2020-08 E2", "2020-09 E1", "2020-09 E2", "2020-10 E1", "2020-10 E2", "2020-11 E1", "2020-11 E2", "2020-12 E1", "2020-12 E2", "2021-01 E1", "2021-01 E2", "2021-02 E1", "2021-02 E2", "2021-03 E1", "2021-03 E2", "2021-04 E1", "2021-04 E2", "2021-05 E1", "2021-05 E2", "2021-06 E1", "2021-06 E2", "2021-07 E1", "2021-07 E2", "2021-08 E1", "2021-08 E2", "2021-09 E1", "2021-09 E2", "2021-10 E1", "2021-10 E2", "2021-11 E1", "2021-11 E2", "2021-12 E1", "2021-12 E2", "2022-01 E1", "2022-01 E2", "2022-02 E1", "2022-02 E2", "2022-03 E1", "2022-03 E2", "2022-04 E1", "2022-04 E2", "2022-05 E1", "2022-05 E2", "2022-06 E1", "2022-06 E2", "2022-07 E1", "2022-07 E2", "2022-08 E1", "2022-08 E2", "2022-09 E1", "2022-09 E2", "2022-10 E1", "2022-10 E2", "2022-11 E1", "2022-11 E2", "2022-12 E1", "2022-12 E2", "2023-01 E1", "2023-01 E2", "2023-02 E1", "2023-02 E2", "2023-03 E1", "2023-03 E2", "2023-04 E1", "2023-04 E2", "2023-05 E1", "2023-05 E2", "2023-06 E1", "2023-06 E2", "2023-07 E1", "2023-07 E2", "2023-08 E1", "2023-08 E2", "2023-09 E1", "2023-09 E2", "2023-10 E1", "2023-10 E2", "2023-11 E1", "2023-11 E2", "2023-12 E1", "2023-12 E2", "2024-01 E1", "2024-01 E2", "2024-02 E1", "2024-02 E2", "2024-03 E1", "2024-03 E2", "2024-04 E1", "2024-04 E2", "2024-05 E1", "2024-05 E2", "2024-06 E1", "2024-06 E2", "2024-07 E1", "2024-07 E2", "2024-08 E1", "2024-08 E2", "2024-09 E1", "2024-09 E2", "2024-10 E1", "2024-10 E2", "2024-11 E1", "2024-11 E2", "2024-12 E1", "2024-12 E2", "2025-01 E1", "2025-01 E2", "2025-02 E1", "2025-02 E2", "2025-03 E1", "2025-03 E2", "2025-04 E1", "2025-04 E2", "2025-05 E1", "2025-05 E2", "2025-06 E1", "2025-06 E2", "2025-07 E1", "2025-07 E2", "2025-08 E1", "2025-08 E2", "2025-09 E1", "2025-09 E2", "2025-10 E1", "2025-10 E2", "2025-11 E1", "2025-11 E2", "2025-12 E1", "2025-12 E2", "2026-01 E1", "2026-01 E2", "2026-02 E1", "2026-02 E2", "2026-03 E1", "2026-03 E2", "2026-04 E1", "2026-04 E2", "2026-05 E1", "2026-05 E2", "2026-06 E1", "2026-06 E2", "2026-07 E1", "2026-07 E2", "2026-08 E1", "2026-08 E2", "2026-09 E1", "2026-09 E2", "2026-10 E1", "2026-10 E2", "2026-11 E1", "2026-11 E2"], "catA": [18502, 20501, 19989, 20340, 20802, 28389, 34001, 30000, 26102, 27389, 30051, 31510, 29501, 36162, 32104, 29000, 33089, 30001, 33132, 32415, 34001, 39000, 47604, 46129, 38889, 40123, 37124, 42999, 42600, 43813, 43212, 44000, 44790, 46989, 53390, 50244, 55989, 56002, 48801, 49301, 51000, 48006, 50289, 56112, 55997, 54887, 52392, 50001, 46889, 48112, 52809, 57009, 56551, 56501, 58501, 64201, 62600, 58001, 59003, 59004, 59421, 68656, 73501, 66889, 68000, 63000, 69000, 71001, 77201, 77291, 78523, 81889, 92100, 91010, 87109, 78301, 74689, 64209, 61029, 62497, 62999, 64839, 67301, 69903, 73100, 73989, 75556, 76223, 77304, 83751, 85000, 76889, 72609, 74991, 73160, 74002, 72369, 72290, 71564, 77201, 76999, 78602, 77400, 71335, 60002, 65689, 63190, 61899, 61990, 62890, 64600, 65710, 64841, 62000, 63880, 63990, 64900, 67889, 67089, 65889, 66010, 65001, 62002, 57199, 61410, 64700, 67749, 67601, 68589, 66590, 66000, 61000, 58700, 55889, 56209, 57498, 57089, 55399, 56001, 57301, 56001, 59200, 56989, 54301, 45002, 51301, 46651, 43000, 45000, 45504, 46009, 47300, 47889, 47020, 53694, 55200, 52301, 53000, 52503, 53334, 51506, 50000, 51507, 50991, 52668, 50951, 48000, 49751, 50101, 50889, 48401, 49430, 50789, 51765, 52000, 51600, 51106, 46489, 45201, 42801, 42801, 44002, 46778, 42900, 36001, 42902, 41761, 41617, 47112, 46791, 42339, 38200, 41400, 36890, 40000, 36810, 38830, 38000, 37000, 38510, 38941, 38001, 36426, 34110, 25000, 32699, 33798, 31997, 30209, 28000, 28457, 25556, 28199, 25000, 23568, 25501, 25920, 26170, 25689, 26301, 26309, 26659, 29159, 33199, 36704, 27000, 30009, 26999, 28589, 26667, 32725, 31917, 31783, 31759, 34001, 32309, 30000, 32000, 33009, 32889, 35320, 35010, 30010, 32999, 32699, 31210, 33520, 32699, 33000, 35710, 37766, 38504, 36534, 37334, 35990, 37690, 40714, 40556, 40609, 43501, 42000, 41001, 41996, 44589, 45600, 49640, 48002, 41801, 48510, 47821, 45001, 47010, 45189, 46689, 47000, 48000, 47001, 52709, 53709, 55001, 57010, 58801, 57599, 57898, 60761, 63000, 68501, 71556, 72996, 68699, 70901, 68001, 73801, 74989, 78001, 78899, 80000, 87889, 86000, 84000, 80501, 81089, 87235, 90589, 88503, 88007, 80000, 86000, 86000, 86556, 88000, 93503, 96501, 103721, 101001, 92000, 98001, 96206, 97000, 95202, 99499, 100000, 101000, 105000, 104000, 106000, 95689, 85001, 88020, 85000, 65010, 81589, 79000, 76801, 83000, 85489, 89000, 94010, 93604, 92700, 88200, 90889, 91001, 91899, 94289, 93900, 96490, 98524, 103799, 102900, 99889, 89889, 94000, 96000, 93699, 93601, 85000, 92850, 92730, 94502, 97724, 99500, 103009, 102501, 96999, 98124, 101102, 101102, 102009, 104524, 107889, 119003, 128105, 122000, 110002, 109000, 105413, 109501, 102009, 109501, 106320, 106501, 108220, 111890, 118000, 123010, 124790, 124229, 126009, 123847, 129000, 126000, 123890, 128501, 133009, 131890, 130001, 132004, 139001, 130100], "catB": [19190, 22400, 23180, 23889, 26389, 36089, 45501, 40001, 38000, 34600, 40002, 39911, 35909, 42889, 43334, 42810, 44129, 42501, 42801, 44600, 45501, 47890, 62502, 72001, 69000, 58910, 53400, 62000, 61894, 57002, 55001, 56801, 56011, 56300, 63000, 67700, 68501, 72501, 70890, 65521, 63002, 64889, 63600, 75889, 77000, 77340, 72350, 70003, 65801, 67889, 73890, 78189, 79304, 82003, 83700, 91000, 92050, 85216, 83000, 85400, 82289, 90501, 94502, 88002, 80191, 88500, 80001, 85801, 92400, 93004, 90200, 93501, 96210, 95501, 92901, 92667, 58090, 73900, 67010, 62000, 61700, 67304, 75000, 81751, 77110, 76389, 77600, 76607, 77100, 86239, 93500, 87910, 84578, 79300, 73010, 75700, 78700, 79000, 75300, 78604, 80710, 82900, 84504, 75010, 70002, 68103, 67304, 65700, 64889, 65001, 68689, 72990, 73010, 71990, 72180, 72002, 70890, 72890, 74389, 74000, 75289, 76889, 70890, 66751, 68668, 71889, 76612, 78001, 77600, 75002, 75000, 71509, 65501, 58109, 60789, 62140, 62101, 60001, 58190, 59889, 57501, 61103, 60001, 55001, 54920, 50089, 38610, 46970, 47604, 46502, 47000, 49602, 51010, 49156, 56000, 57010, 56089, 57508, 57903, 56500, 57002, 55501, 53001, 56410, 56206, 53001, 46229, 51109, 53106, 52807, 48209, 50621, 53300, 54000, 54405, 54406, 55414, 53001, 50110, 47501, 49802, 50001, 53711, 51000, 49000, 49189, 48109, 49996, 57414, 57390, 53711, 47002, 45289, 42661, 42322, 39000, 39001, 37010, 37605, 37330, 38501, 37989, 36000, 33900, 31000, 32551, 34381, 32429, 32001, 31307, 31301, 31302, 32302, 31101, 31001, 31001, 32200, 33989, 34509, 35403, 36961, 39401, 43102, 48000, 48010, 42564, 39728, 35906, 34000, 39406, 40001, 38602, 36001, 37000, 41361, 41805, 40009, 39700, 37900, 36000, 37109, 37705, 30890, 32889, 32801, 30012, 35889, 35001, 37102, 38802, 41510, 40989, 40690, 40990, 39000, 41101, 45012, 49300, 49001, 50100, 46790, 46002, 45001, 47001, 52309, 61190, 60001, 58089, 60109, 56032, 56100, 59501, 56001, 61001, 62600, 68310, 70200, 80210, 82801, 79601, 80401, 80989, 77700, 82001, 86102, 93590, 94889, 98889, 98389, 90002, 92090, 95889, 100684, 106001, 107800, 110003, 107001, 112001, 113000, 108051, 95856, 110000, 115388, 113881, 105501, 108006, 102002, 105459, 105524, 115001, 115501, 116201, 118501, 120889, 119399, 113034, 120702, 121000, 118002, 118001, 126889, 129890, 134889, 140889, 146002, 150001, 110001, 135336, 130100, 110001, 85010, 112000, 102338, 97000, 96010, 96011, 101334, 102001, 105002, 105689, 100607, 102334, 100901, 100000, 106101, 105889, 106300, 110001, 116002, 113890, 108001, 105081, 103010, 109000, 121501, 116625, 111104, 109598, 113000, 116890, 117899, 117003, 119890, 116988, 113000, 116670, 119600, 119101, 123498, 124400, 127501, 136890, 141000, 131889, 115001, 129890, 123900, 115102, 119100, 121634, 110890, 105001, 114002, 115568, 121000, 121001, 126236, 129501, 126989, 123502, 130889, 129890, 129910, 131001, 135001, 133000, 130100, 131901, 132334, 125600], "catC": [19001, 20090, 21390, 23501, 27001, 32890, 36511, 35556, 32501, 29389, 30189, 31689, 31389, 30601, 30112, 30002, 33000, 31001, 30889, 30511, 31006, 31202, 32001, 33501, 35111, 30000, 28589, 29011, 30001, 29690, 28189, 23900, 21889, 22989, 29006, 31089, 32590, 34502, 34009, 32289, 31900, 30089, 32801, 37011, 40803, 40189, 40009, 39589, 38699, 44001, 49801, 52004, 50009, 51511, 53989, 57589, 58553, 57106, 54522, 54502, 55556, 55805, 57001, 59334, 57334, 57809, 56001, 57889, 59111, 60235, 63035, 62201, 60000, 57051, 54989, 53489, 53900, 54111, 56011, 58502, 57051, 56889, 57989, 59001, 61011, 65036, 68251, 71001, 73999, 76001, 76310, 68002, 55503, 55002, 51112, 48001, 48889, 50001, 51002, 52890, 56302, 53891, 49503, 32890, 36301, 40889, 43001, 42001, 43390, 52010, 54009, 52390, 49901, 49889, 57389, 61000, 63701, 65001, 60001, 52100, 55011, 55012, 52101, 53202, 56501, 59999, 64001, 53001, 50098, 52001, 50900, 50502, 50001, 50002, 49302, 46501, 46801, 45289, 44890, 42303, 43809, 45890, 48101, 46001, 42036, 46502, 45036, 45001, 48890, 46502, 44213, 43002, 42302, 43002, 46434, 48002, 47889, 49890, 48302, 48001, 49801, 49890, 48702, 45589, 48001, 49002, 51209, 49500, 46302, 47001, 48901, 49810, 49002, 47036, 45906, 26501, 26029, 30600, 38501, 36879, 40212, 42809, 42801, 42004, 43002, 46890, 48902, 51890, 58036, 57701, 42000, 45112, 40101, 39000, 38303, 36859, 36003, 35001, 34001, 34202, 33190, 29901, 29902, 32001, 31092, 30889, 30389, 29902, 27001, 27104, 28501, 29501, 29501, 27509, 27009, 27001, 27002, 26230, 26378, 26914, 27010, 27021, 27589, 32001, 28559, 27400, 25502, 25501, 25089, 24599, 27800, 26501, 25502, 25556, 26509, 26001, 25392, 24502, 23704, 23200, 24402, 25001, 25013, 25001, 24202, 22002, 24502, 23888, 24100, 25006, 26644, 28589, 33089, 33778, 31502, 30334, 32889, 35201, 35900, 40999, 45001, 40890, 37513, 39589, 36134, 44001, 43001, 41701, 37002, 37000, 38900, 39523, 42589, 40010, 40001, 39000, 38890, 40501, 42001, 43502, 45000, 44000, 42200, 43001, 44001, 46501, 48889, 51504, 54901, 52002, 50890, 51501, 53002, 53011, 54001, 54889, 56089, 59090, 64989, 67001, 65991, 70201, 76302, 81802, 81501, 78200, 77301, 77109, 85119, 87790, 91101, 85389, 76801, 75334, 75589, 77501, 81801, 83140, 82223, 82001, 82100, 82801, 82889, 83801, 85900, 84790, 78001, 73889, 71001, 69423, 67599, 68001, 72001, 73001, 75599, 70112, 67501, 68502, 70001, 72001, 70589, 69900, 70001, 70601, 71100, 72400, 74001, 74000, 75009, 72939, 68340, 69000, 70289, 69890, 67891, 65476, 62506, 65189, 67001, 70089, 68782, 65001, 62590, 63189, 62000, 65000, 66689, 68600, 70001, 72190, 71556, 72501, 74301, 76801, 76000, 76389, 76501, 77003, 75503, 75202, 74801, 74999, 76000, 78000, 80001, 83501, 87479, 92223, 94000, 93001, 95000, 93889, 91545, 90002, 93101, 92144, 91889, 92200, 92000, 91790], "catE": [19889, 21899, 22401, 24229, 27590, 42001, 49000, 43003, 39002, 39000, 41000, 41006, 41010, 43565, 42901, 43501, 44001, 43290, 44090, 44900, 46001, 49890, 64900, 76102, 75789, 67009, 58890, 62001, 62010, 59073, 57100, 56001, 56490, 56889, 62000, 65490, 68811, 74490, 70117, 67000, 65589, 62502, 65058, 73600, 78001, 75889, 74340, 71000, 65700, 67101, 73801, 78000, 76881, 80101, 84590, 92010, 88990, 86889, 85889, 84389, 86999, 92700, 95034, 93990, 87999, 89990, 86889, 87000, 92100, 93990, 97000, 95990, 96101, 97889, 94890, 91910, 65001, 73301, 66989, 62000, 62301, 66701, 76000, 83001, 77000, 76802, 77989, 79223, 80000, 87001, 93889, 92289, 89001, 83000, 76901, 77501, 79000, 78810, 77003, 79000, 82000, 84001, 84100, 73810, 65501, 67290, 67334, 65301, 63001, 65002, 69001, 72810, 74403, 74801, 72003, 72201, 71300, 73900, 76904, 73990, 75200, 76790, 71921, 67901, 70500, 72100, 78000, 79500, 78004, 78001, 75801, 74501, 69001, 60101, 57885, 61001, 61010, 61300, 58801, 60000, 60689, 62019, 60003, 57501, 55089, 51000, 44001, 45009, 48002, 46667, 47510, 49501, 49000, 49700, 55100, 57390, 56002, 57501, 58201, 56956, 56889, 55201, 54200, 56340, 56000, 54901, 50010, 50389, 53001, 52600, 48556, 51000, 53001, 54501, 54556, 54616, 55000, 52000, 50526, 48001, 49899, 50101, 52751, 50000, 48005, 49012, 49000, 52000, 57000, 57501, 54334, 48011, 47390, 44000, 39903, 38801, 39000, 38000, 38039, 38389, 38600, 38700, 37000, 34400, 31001, 32809, 33420, 32311, 31801, 32000, 32552, 32900, 32000, 30959, 30851, 31809, 32909, 33689, 35310, 36667, 37620, 41000, 48209, 52410, 52502, 47000, 42002, 39400, 36901, 39889, 40512, 40002, 37912, 40000, 41001, 42020, 40101, 40889, 38889, 37989, 38000, 37500, 34900, 33301, 32500, 32500, 34989, 35001, 36502, 38110, 40790, 41001, 40301, 39889, 39500, 41503, 45510, 49500, 49489, 51900, 49778, 47506, 47001, 47806, 52200, 62100, 63002, 62000, 61112, 58001, 57700, 60001, 59599, 64901, 64700, 70002, 72756, 85000, 88000, 86001, 85000, 83889, 82501, 83911, 87000, 93102, 98890, 99010, 99999, 95801, 91112, 95901, 100697, 104400, 110524, 114001, 113000, 112001, 113299, 107201, 105001, 108003, 116577, 114009, 110524, 109600, 107889, 107000, 105002, 118001, 116000, 116020, 118990, 124501, 124002, 125000, 120889, 123000, 121000, 122110, 126201, 131000, 137000, 144640, 152000, 158004, 125011, 135002, 133388, 118388, 106388, 109004, 100101, 94006, 95010, 95856, 101002, 103249, 104689, 105002, 101600, 100000, 100889, 100341, 105239, 106001, 106901, 113104, 116000, 114700, 109000, 107501, 104001, 108992, 123000, 115112, 110000, 110002, 112901, 116991, 117002, 118001, 118889, 118010, 113900, 116889, 118500, 120000, 122334, 125001, 127901, 140502, 140009, 136000, 121010, 125001, 123000, 119000, 122000, 120891, 116000, 112890, 114890, 118119, 121001, 125002, 127700, 130000, 129000, 129002, 129801, 129971, 131000, 135000, 137890, 137000, 137000, 135790, 135998, 136000], "quotaA": [1152, 1151, 1154, 1148, 1148, 1146, 705, 706, 806, 699, 706, 699, 700, 699, 622, 606, 631, 597, 601, 647, 598, 597, 598, 617, 614, 607, 523, 511, 532, 527, 512, 565, 511, 523, 510, 512, 514, 510, 566, 557, 548, 548, 549, 565, 548, 559, 549, 566, 554, 657, 619, 624, 667, 636, 637, 629, 641, 630, 668, 633, 641, 676, 421, 400, 399, 402, 401, 393, 395, 396, 395, 395, 410, 409, 335, 333, 336, 337, 341, 333, 336, 333, 341, 342, 338, 334, 373, 366, 366, 370, 365, 373, 368, 364, 364, 367, 364, 368, 362, 362, 365, 362, 367, 361, 513, 509, 507, 509, 513, 509, 574, 575, 572, 573, 575, 572, 703, 701, 709, 705, 704, 705, 992, 988, 987, 987, 988, 987, 1444, 1434, 1432, 1429, 1466, 1435, 1688, 1756, 1688, 1687, 1687, 1690, 1664, 1662, 1698, 1669, 1659, 1659, 2038, 2049, 2033, 2053, 2105, 2062, 2218, 2217, 2218, 2252, 2222, 2272, 2018, 2034, 2067, 2008, 2064, 2023, 1929, 1846, 1844, 1844, 1877, 1846, 2060, 2133, 2061, 2096, 2068, 2052, 1905, 1920, 1898, 1906, 1904, 1907, 1817, 1817, 1820, 1815, 1829, 1815, 1683, 1686, 1680, 1687, 1693, 1713, 1557, 1562, 1580, 1559, 1566, 1566, 1435, 1434, 1441, 1446, 1435, 1443, 1672, 1695, 1664, 1664, 1668, 1674, 1819, 1818, 1878, 1890, 1815, 1818, 1662, 1650, 1659, 1650, 1656, 1653, 1431, 1475, 1424, 1424, 1431, 1623, 1059, 1062, 1056, 1056, 1057, 1060, 1043, 1023, 1030, 1029, 1035, 1034, 982, 982, 978, 982, 1289, 1304, 1022, 1034, 1035, 1034, 912, 916, 967, 972, 978, 969, 963, 966, 885, 903, 887, 886, 883, 890, 832, 835, 858, 830, 867, 836, 805, 806, 804, 803, 816, 811, 536, 537, 536, 534, 543, 531, 542, 536, 531, 543, 536, 532, 612, 625, 612, 614, 617, 628, 554, 551, 556, 543, 564, 559, 460, 459, 458, 473, 462, 459, 509, 508, 517, 510, 515, 507, 474, 596, 581, 586, 588, 581, 632, 636, 645, 651, 785, 797, 924, 925, 928, 919, 924, 923, 938, 937, 963, 936, 975, 936, 968, 983, 962, 966, 967, 973, 1013, 978, 983, 990, 994, 1058, 1040, 1041, 1037, 1035, 1034, 1069, 1138, 1149, 1144, 1138, 1138, 1139, 1267, 1267, 1275, 1254, 1253, 1253, 1268, 1264, 1275, 1272, 1268, 1270, 1306, 1285, 1280, 1283, 1285, 1301, 1265, 1289, 1268, 1264, 1265, 1265, 1301, 1239, 1246, 1251, 1244, 1245, 1226, 1197, 1195, 1193, 1232, 1191, 1189, 1193], "quotaB": [687, 717, 1154, 685, 688, 711, 571, 561, 550, 561, 553, 557, 557, 552, 479, 482, 479, 488, 479, 479, 482, 480, 479, 499, 481, 483, 431, 424, 424, 424, 425, 423, 439, 424, 424, 423, 445, 436, 354, 353, 359, 353, 356, 353, 356, 353, 354, 368, 356, 353, 350, 351, 354, 352, 352, 349, 354, 349, 350, 349, 358, 353, 350, 351, 355, 351, 350, 353, 350, 351, 350, 360, 363, 351, 302, 303, 326, 307, 302, 310, 317, 332, 302, 305, 331, 303, 380, 375, 381, 377, 376, 382, 376, 379, 373, 377, 386, 393, 360, 355, 350, 353, 363, 351, 483, 484, 494, 490, 493, 498, 507, 506, 511, 509, 505, 507, 574, 570, 584, 579, 571, 576, 724, 722, 723, 723, 722, 728, 934, 948, 929, 928, 934, 930, 1057, 1058, 1059, 1058, 1057, 1073, 1037, 1029, 1031, 1027, 1027, 1026, 1216, 1208, 1209, 1220, 1218, 1211, 1462, 1537, 1470, 1463, 1469, 1463, 1336, 1336, 1372, 1338, 1350, 1340, 1347, 1254, 1245, 1244, 1252, 1246, 1366, 1377, 1371, 1357, 1360, 1369, 1320, 1325, 1325, 1321, 1322, 1322, 1286, 1293, 1290, 1288, 1285, 1285, 1376, 1383, 1375, 1374, 1374, 1381, 1396, 1391, 1390, 1402, 1389, 1417, 1280, 1283, 1293, 1316, 1288, 1285, 1265, 1272, 1274, 1278, 1271, 1273, 1265, 1241, 1239, 1243, 1245, 1244, 1202, 1214, 1233, 1201, 1202, 1205, 1139, 1163, 1139, 1141, 1141, 1143, 1047, 1045, 1046, 1044, 1048, 1044, 1017, 1019, 1013, 1015, 1022, 1012, 984, 987, 987, 992, 1291, 1339, 932, 923, 904, 912, 805, 793, 1013, 1007, 1035, 1009, 1023, 1018, 943, 942, 942, 946, 958, 956, 819, 817, 815, 809, 840, 819, 771, 794, 791, 772, 774, 774, 587, 594, 593, 595, 587, 592, 550, 559, 551, 555, 550, 560, 527, 528, 528, 531, 527, 527, 474, 471, 470, 471, 474, 470, 411, 416, 427, 409, 410, 408, 430, 436, 431, 466, 430, 430, 410, 480, 454, 454, 471, 462, 470, 478, 470, 496, 474, 472, 636, 648, 638, 643, 633, 657, 655, 649, 708, 656, 653, 690, 666, 658, 685, 674, 671, 661, 663, 686, 665, 663, 671, 670, 696, 678, 689, 676, 677, 686, 748, 744, 765, 747, 760, 744, 813, 782, 795, 784, 781, 784, 789, 792, 790, 792, 830, 809, 800, 806, 802, 838, 824, 803, 813, 813, 815, 812, 811, 811, 883, 869, 889, 883, 867, 871, 926, 936, 934, 927, 945, 923, 959, 951]};
+
+    let mainChart, quotaChart;
+
+    function renderMainChart(labels, catA, catB, catC, catE) {
+      const ctx = document.getElementById('coeChart').getContext('2d');
+      if (mainChart) mainChart.destroy();
+
+      mainChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Category A (<= 1600cc / EVs <= 110kW)',
+              data: catA,
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56, 189, 248, 0.08)',
+              borderWidth: 2,
+              tension: 0.15,
+              fill: true,
+              pointRadius: 0,
+              pointHoverRadius: 5
+            },
+            {
+              label: 'Category B (> 1600cc / EVs > 110kW)',
+              data: catB,
+              borderColor: '#818cf8',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              tension: 0.15,
+              pointRadius: 0,
+              pointHoverRadius: 5
+            },
+            {
+              label: 'Category E (Open)',
+              data: catE,
+              borderColor: '#f59e0b',
+              backgroundColor: 'transparent',
+              borderWidth: 1.5,
+              borderDash: [4, 4],
+              tension: 0.15,
+              pointRadius: 0,
+              pointHoverRadius: 5
+            },
+            {
+              label: 'Category C (Commercial)',
+              data: catC,
+              borderColor: '#10b981',
+              backgroundColor: 'transparent',
+              borderWidth: 1.5,
+              tension: 0.15,
+              pointRadius: 0,
+              pointHoverRadius: 5
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: '#94a3b8',
+                font: { family: 'Plus Jakarta Sans', size: 11, weight: '500' }
+              }
+            },
+            tooltip: {
+              backgroundColor: '#182234',
+              titleColor: '#f3f4f6',
+              bodyColor: '#94a3b8',
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1,
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ': $' + context.raw.toLocaleString();
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: '#64748b',
+                maxTicksLimit: 14,
+                font: { family: 'JetBrains Mono', size: 10 }
+              },
+              grid: { color: 'rgba(255,255,255,0.04)' }
+            },
+            y: {
+              ticks: {
+                color: '#64748b',
+                callback: v => '$' + (v / 1000) + 'k',
+                font: { family: 'JetBrains Mono', size: 10 }
+              },
+              grid: { color: 'rgba(255,255,255,0.04)' }
+            }
+          }
+        }
+      });
+    }
+
+    function renderQuotaChart() {
+      const ctx = document.getElementById('quotaChart').getContext('2d');
+      // Subsample last 40 exercises for clean visibility
+      const subLabels = rawData.labels.slice(-30);
+      const subQuotaA = rawData.quotaA.slice(-30);
+      const subCatA = rawData.catA.slice(-30);
+
+      quotaChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: subLabels,
+          datasets: [
+            {
+              type: 'line',
+              label: 'Cat A Premium ($)',
+              data: subCatA,
+              borderColor: '#38bdf8',
+              yAxisID: 'y1',
+              tension: 0.2,
+              borderWidth: 2,
+              pointRadius: 2
+            },
+            {
+              type: 'bar',
+              label: 'Cat A Quota Volume',
+              data: subQuotaA,
+              backgroundColor: 'rgba(129, 140, 248, 0.35)',
+              borderColor: '#818cf8',
+              borderWidth: 1,
+              yAxisID: 'y'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#94a3b8', font: { size: 10 } }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#64748b', maxTicksLimit: 6, font: { size: 9 } },
+              grid: { display: false }
+            },
+            y: {
+              position: 'left',
+              ticks: { color: '#818cf8', font: { size: 9 } },
+              grid: { color: 'rgba(255,255,255,0.03)' },
+              title: { display: true, text: 'Quota', color: '#818cf8', font: { size: 10 } }
+            },
+            y1: {
+              position: 'right',
+              ticks: { color: '#38bdf8', callback: v => '$' + (v/1000) + 'k', font: { size: 9 } },
+              grid: { display: false },
+              title: { display: true, text: 'Premium ($)', color: '#38bdf8', font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    function filterTimeframe(range, btn) {
+      document.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      let startIndex = 0;
+      if (range === 'post-covid') {
+        // Find index where label starts with 2020
+        startIndex = rawData.labels.findIndex(l => l.startsWith('2020'));
+      } else if (range === 'recent') {
+        startIndex = rawData.labels.findIndex(l => l.startsWith('2024'));
+      }
+
+      renderMainChart(
+        rawData.labels.slice(startIndex),
+        rawData.catA.slice(startIndex),
+        rawData.catB.slice(startIndex),
+        rawData.catC.slice(startIndex),
+        rawData.catE.slice(startIndex)
+      );
+    }
+
+    function updateCalcDefaults() {
+      const select = document.getElementById('calcCategory');
+      document.getElementById('calcPremium').value = select.value;
+      computeDepreciation();
+    }
+
+    function computeDepreciation() {
+      const p = parseFloat(document.getElementById('calcPremium').value) || 0;
+      const yrs = parseFloat(document.getElementById('calcYears').value) || 10;
+      const annual = p / (yrs > 0 ? yrs : 1);
+      const monthly = annual / 12;
+
+      document.getElementById('annualDeprec').innerText = '$' + Math.round(annual).toLocaleString();
+      document.getElementById('monthlyDeprec').innerText = '$' + Math.round(monthly).toLocaleString();
+    }
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      renderMainChart(rawData.labels, rawData.catA, rawData.catB, rawData.catC, rawData.catE);
+      renderQuotaChart();
+      computeDepreciation();
+    });
+  </script>
+</body>
+</html>
